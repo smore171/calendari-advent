@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendari d'Advent Clicable</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="calendari-advent">
+    <div class="sostre"></div>
+    <div class="façana">
+        <a href="#" class="finestra" data-day="1" onclick="obrirModal(this)">1</a>
+        <a href="#" class="finestra" data-day="2" onclick="obrirModal(this)">2</a>
+        <a href="#" class="finestra" data-day="3" onclick="obrirModal(this)">3</a>
+        <a href="#" class="finestra" data-day="4" onclick="obrirModal(this)">4</a>
+        <a href="#" class="finestra" data-day="5" onclick="obrirModal(this)">5</a>
+        <a href="#" class="finestra" data-day="6" onclick="obrirModal(this)">6</a>
+        <a href="#" class="finestra" data-day="7" onclick="obrirModal(this)">7</a>
+        <a href="#" class="finestra" data-day="8" onclick="obrirModal(this)">8</a>
+        <a href="#" class="finestra" data-day="9" onclick="obrirModal(this)">9</a>
+        <a href="#" class="finestra" data-day="10" onclick="obrirModal(this)">10</a>
+        <a href="#" class="finestra" data-day="11" onclick="obrirModal(this)">11</a>
+        <a href="#" class="finestra" data-day="12" onclick="obrirModal(this)">12</a>
+        <a href="#" class="finestra" data-day="13" onclick="obrirModal(this)">13</a>
+        <a href="#" class="finestra" data-day="14" onclick="obrirModal(this)">14</a>
+        <a href="#" class="finestra" data-day="15" onclick="obrirModal(this)">15</a>
+        <a href="#" class="finestra" data-day="16" onclick="obrirModal(this)">16</a>
+        <a href="#" class="finestra" data-day="17" onclick="obrirModal(this)">17</a>
+        <a href="#" class="finestra" data-day="18" onclick="obrirModal(this)">18</a>
+        <a href="#" class="finestra" data-day="19" onclick="obrirModal(this)">19</a>
+        <a href="#" class="finestra" data-day="20" onclick="obrirModal(this)">20</a>
+        <a href="#" class="finestra" data-day="21" onclick="obrirModal(this)">21</a>
+        <a href="#" class="finestra" data-day="22" onclick="obrirModal(this)">22</a>
+        <a href="#" class="finestra" data-day="23" onclick="obrirModal(this)">23</a>
+        <a href="#" class="finestra" data-day="24" onclick="obrirModal(this)">24</a>
+    </div>
+    <div class="base"></div>
+</div>
+
+<div id="myModal" class="modal">
+    <div class="modal-contingut">
+        <span class="tancar" onclick="tancarModal()">&times;</span>
+        <h2 id="modal-titol"></h2>
+        <p id="modal-text"></p>
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>

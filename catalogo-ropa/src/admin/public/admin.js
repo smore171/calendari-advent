@@ -86,7 +86,14 @@ function renderEditor(data) {
   <div class="two"><div><label>Cuidados</label><input id="e-care" value="${esc(p.care)}"></div>
   <div><label>Nota de ajuste</label><input id="e-fit" value="${esc(p.fit_note)}" placeholder="Patrón oversize"></div></div>
   <label>Medidas en cm (JSON: {"M":{"pecho":112,"largo":70}})</label><textarea id="e-chart" rows="2">${esc(chart)}</textarea>
-  <label>Variantes: ${p.variants.map((v) => `${esc(v.color)} ${esc(v.size)}`).join(' · ')}</label>
+  <div class="two">
+    <div><label>Colores (separados por coma)</label><input id="e-colors" value="${esc(p.colors.join(', '))}"></div>
+    <div><label>Tallas (separadas por coma)</label><input id="e-sizes" value="${esc(p.sizes.join(', '))}"></div>
+  </div>
+  <label>Disponibilidad</label><select id="e-stock">
+    <option value="">Sin cambios (${esc([...new Set(p.variants.map((v) => v.stock))].join(', '))})</option>
+    <option value="on_demand">Bajo pedido</option><option value="in_stock">En stock</option><option value="out_of_stock">Agotado</option></select>
+  <div class="margin">${p.variants.length} variantes · ${p.source?.platform || ''}${p.review?.notes ? ` · Nota del proveedor: ${esc(p.review.notes.slice(0, 160))}` : ''}</div>
   <label>Fotos (orden = posición en la web; la 1 es la portada)</label>
   <div class="imgs" id="e-imgs"></div>
   <div class="actions">
@@ -138,6 +145,9 @@ async function save(status) {
     price_eur: $('#e-price').value ? Number($('#e-price').value) : null,
     composition: $('#e-comp').value.trim(), care: $('#e-care').value.trim(), fit_note: $('#e-fit').value.trim(),
     size_chart_cm: chart,
+    colors: $('#e-colors').value.split(',').map((x) => x.trim()).filter(Boolean),
+    sizes: $('#e-sizes').value.split(',').map((x) => x.trim()).filter(Boolean),
+    ...($('#e-stock').value ? { stock: $('#e-stock').value } : {}),
     images: imgs.map((x) => ({ index: x.index, type: x.type, publish: x.publish })),
   };
   if (status) body.status = status;

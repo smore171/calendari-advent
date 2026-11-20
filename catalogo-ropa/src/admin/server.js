@@ -9,7 +9,7 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { loadConfig, PATHS } from '../lib/config.js';
 import { readJson, writeJson, listJson, nowIso } from '../lib/util.js';
-import { validateProduct, publishableImages, STATUSES, IMAGE_TYPES } from '../lib/schema.js';
+import { validateProduct, publishableImages, makeSku, STATUSES, IMAGE_TYPES, STOCK_MODES } from '../lib/schema.js';
 import { marginReport } from '../lib/pricing.js';
 
 const PORT = Number(process.env.ADMIN_PORT || 4321);
@@ -74,6 +74,20 @@ async function api(req, res, url) {
   if (req.method === 'PUT') {
     const patch = await readBody(req);
     for (const k of EDITABLE) if (k in patch) p[k] = patch[k];
+    // Colores/tallas editados → se regeneran las variantes (conserva stock y precio de las que ya existían).
+    if (Array.isArray(patch.colors) || Array.isArray(patch.sizes) || STOCK_MODES.includes(patch.stock)) {
+      const clean = (arr, fallback) => [...new Set((arr || []).map((x) => String(x).trim()).filter(Boolean))].slice(0, 30).length
+        ? [...new Set((arr || []).map((x) => String(x).trim()).filter(Boolean))].slice(0, 30) : fallback;
+      const colors = clean(patch.colors ?? p.colors, ['Único']);
+      const sizes = clean(patch.sizes ?? p.sizes, ['Única']).map((x) => x.toUpperCase());
+      const old = new Map(p.variants.map((v) => [`${v.color}|${v.size}`, v]));
+      p.colors = colors; p.sizes = sizes;
+      p.variants = colors.flatMap((c) => sizes.map((sz) => {
+        const prev = old.get(`${c}|${sz}`);
+        return { sku: prev?.sku || makeSku(p.id, c, sz), color: c, size: sz,
+          stock: STOCK_MODES.includes(patch.stock) ? patch.stock : (prev?.stock || 'on_demand'), price_eur: prev?.price_eur ?? null };
+      }));
+    }
     if (Array.isArray(patch.images)) {
       // El panel manda [{ index, type, publish }] en el orden deseado.
       const reordered = patch.images.map((x, pos) => {

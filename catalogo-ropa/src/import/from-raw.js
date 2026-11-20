@@ -32,6 +32,7 @@ function detectPlatform(url = '') {
   if (/weidian\.com/i.test(url)) return 'weidian';
   if (/1688\.com/i.test(url)) return '1688';
   if (/taobao\.com|tmall\.com/i.test(url)) return 'taobao';
+  if (/yupoo\.com/i.test(url)) return 'yupoo';
   return 'manual';
 }
 
@@ -47,8 +48,10 @@ export function rawToProduct(raw, { config, rawDir = '.', existingIds = new Set(
     shop: pick(raw, 'shop', 'seller', 'store') || '',
     cost_cny: Number.isFinite(cost) ? cost : null,
     imported_at: pick(raw, 'imported_at') || nowIso(),
+    ...(pick(raw, 'referer') ? { referer: pick(raw, 'referer') } : {}),
   };
   p.title_original = titleOriginal;
+  if (pick(raw, 'notes')) p.review.notes = String(pick(raw, 'notes'));
   // Título provisional: se traduce/reescribe en el panel (o con el proveedor IA opcional).
   p.category = pick(raw, 'category') || guessCategory(titleOriginal) || '';
   const hasChinese = /[一-鿿]/.test(titleOriginal);

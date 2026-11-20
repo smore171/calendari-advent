@@ -27,7 +27,7 @@ npm install
 npm run demo        # crea 16 productos de prueba con fotos sintéticas y genera la web
 npm run preview     # tienda en http://localhost:8788
 npm run admin       # panel en http://localhost:4321 (en otra terminal)
-npm test            # 14 tests
+npm test            # 15 tests
 ```
 
 La demo incluye a propósito una camisa **sin composición**: el sistema no deja publicarla hasta que la completes en el panel.
@@ -36,13 +36,30 @@ La demo incluye a propósito una camisa **sin composición**: el sistema no deja
 
 | Paso | Comando | Qué hace |
 |---|---|---|
-| 1. Exportar | (Sourcebase) | Guarda un JSON por tienda/artículo en `data/raw/` con el [formato crudo](src/import/from-raw.js) |
+| 1. Exportar | Sourcebase o `npm run yupoo -- <url>` | Guarda un JSON por tienda/artículo en `data/raw/` con el [formato crudo](src/import/from-raw.js) |
 | 2. Importar | `npm run import` | Crea borradores en `data/products/` con título provisional en español, categoría, variantes, composición, medidas y precio sugerido |
 | 3. Fotos | `npm run images -- --all` | Descarga, detecta duplicados, clasifica, ordena y genera WebP 3:4 (480/900/1600 px) |
 | 4. Revisar | `npm run admin` | Corrige lo dudoso y aprueba (en lote o una a una) |
 | 5. Validar | `npm run validate` | Lista errores/avisos de todo el catálogo |
 | 6. Fotos a R2 | `npm run upload` | Sube los WebP a Cloudflare R2 (solo los nuevos) |
 | 7. Publicar | `npm run build:prod` | Genera `dist/` con fotos servidas desde R2 |
+
+### Importar desde Yupoo
+
+```bash
+npm run yupoo -- https://TIENDA.x.yupoo.com/albums/123456        # un álbum
+npm run yupoo -- https://TIENDA.x.yupoo.com/albums --limit 50     # la tienda entera (paginada)
+npm run yupoo -- https://TIENDA.x.yupoo.com/categories/7890       # una categoría
+npm run images -- --all                                           # luego, las fotos
+```
+
+Cada álbum se convierte en un producto en borrador: título, fotos (en tamaño grande), y del texto del álbum saca precio (¥/RMB/元), tallas (`S-XL`, `M L XL`, `尺码…`), colores y composición. Lo que no venga en el álbum (Yupoo no tiene variantes estructuradas) se completa en el panel: colores, tallas y disponibilidad son editables y regeneran las variantes.
+
+- Va despacio a propósito (≈1 s entre peticiones) para no saturar Yupoo.
+- Álbumes privados o con contraseña no se pueden leer.
+- `--html archivo.html` permite importar un álbum guardado desde el navegador si Yupoo bloquea las peticiones.
+- **Probado con páginas de ejemplo, no contra Yupoo en vivo**: si cambian su HTML, los ajustes están en `src/import/yupoo.js`.
+- Muchos catálogos de Yupoo son réplicas de marcas: importa solo los de tu proveedor de marca blanca.
 
 ### Conectar Sourcebase
 

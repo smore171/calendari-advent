@@ -16,7 +16,7 @@ import { orderImages, markDuplicates } from './order.js';
 
 const AI_THRESHOLD = Number(process.env.AI_THRESHOLD || 0.6);
 
-async function loadOriginal(src, cacheDir, idx) {
+async function loadOriginal(src, cacheDir, idx, refererHint) {
   if (/^https?:\/\//.test(src)) {
     const ext = (path.extname(new URL(src).pathname).toLowerCase().match(/\.(jpe?g|png|webp|gif)$/) || ['.jpg'])[0];
     const file = path.join(cacheDir, `orig-${String(idx).padStart(2, '0')}${ext}`);
@@ -25,7 +25,7 @@ async function loadOriginal(src, cacheDir, idx) {
         headers: {
           // Algunos CDN chinos exigen referer/UA de navegador.
           'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36',
-          referer: src.includes('1688') || src.includes('alicdn') ? 'https://detail.1688.com/' : 'https://weidian.com/',
+          referer: refererHint || (src.includes('yupoo.com') ? 'https://x.yupoo.com/' : src.includes('1688') || src.includes('alicdn') ? 'https://detail.1688.com/' : 'https://weidian.com/'),
         },
       });
       if (!res.ok) throw new Error(`descarga ${res.status} ${src}`);
@@ -74,7 +74,7 @@ export async function processProductImages(product, config, { useAi = true, log 
     // Respeta decisiones manuales del panel.
     if (img.locked) { images.push(img); continue; }
     try {
-      const file = await loadOriginal(img.original, dir, idx);
+      const file = await loadOriginal(img.original, dir, idx, product.source?.referer);
       const buf = await readFile(file);
       const [hash, f] = await Promise.all([dHash(buf), extractFeatures(buf)]);
       let result = heuristic.classify(f);

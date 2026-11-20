@@ -17,7 +17,8 @@
     "demo": "node examples/make-demo.js && node src/cli.js import examples/raw && node src/cli.js images --all && node src/cli.js approve --all && node src/cli.js build",
     "preview": "node src/site/preview.js",
     "test": "node --test tests/*.test.js",
-    "build:prod": "MEDIA_FROM_R2=1 node src/cli.js build"
+    "build:prod": "MEDIA_FROM_R2=1 node src/cli.js build",
+    "yupoo": "node src/cli.js yupoo"
   },
   "dependencies": {
     "sharp": "^0.35.0"

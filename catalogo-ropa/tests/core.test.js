@@ -151,3 +151,36 @@ test('glosario: categorías con prioridad correcta', () => {
   assert.equal(guessCategory('工装 短裤'), 'bermudas');
   assert.equal(provisionalTitle('羊毛 大衣 长款', 'chaquetas'), 'Abrigo de lana');
 });
+
+test('Yupoo: URL, listado, álbum y conversión a producto', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { parseYupooUrl, parseAlbumList, parseAlbum, albumToRaw, extractHints } = await import('../src/import/yupoo.js');
+  const fx = (f) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), 'utf8');
+
+  assert.deepEqual(parseYupooUrl('https://demostore.x.yupoo.com/albums/123?uid=1'), { store: 'demostore', album: '123', category: null, origin: 'https://demostore.x.yupoo.com', kind: 'album' });
+  assert.equal(parseYupooUrl('https://demostore.x.yupoo.com/categories/77').category, '77');
+  assert.throws(() => parseYupooUrl('https://example.com/albums/1'));
+
+  const list = parseAlbumList(fx('yupoo-list.html'), 'https://demostore.x.yupoo.com');
+  assert.equal(list.albums.length, 2);
+  assert.equal(list.maxPage, 3);
+
+  const album = parseAlbum(fx('yupoo-album.html'), 'https://demostore.x.yupoo.com/albums/111111?uid=1');
+  assert.equal(album.images.length, 3, 'portada repetida y logo excluidos');
+  assert.ok(album.images.every((u) => u.startsWith('https://photo.yupoo.com/') && u.endsWith('/big.jpg')));
+  assert.equal(album.price_cny, 89);
+  assert.deepEqual(album.sizes, ['S', 'M', 'L', 'XL']);
+  assert.deepEqual(album.colors.sort(), ['灰色', '米白', '黑色'].sort());
+
+  const raw = albumToRaw(album, 'demostore');
+  const p = rawToProduct(raw, { config: { pricing } });
+  assert.equal(p.source.platform, 'yupoo');
+  assert.equal(p.source.referer, 'https://demostore.x.yupoo.com/');
+  assert.equal(p.category, 'sudaderas');
+  assert.equal(p.composition, '100% algodón');
+  assert.equal(p.variants.length, 12);
+  assert.equal(p.price_eur, suggestPrice(89, pricing));
+
+  assert.deepEqual(extractHints('size: M L XL').sizes, ['M', 'L', 'XL']);
+  assert.equal(extractHints('sin precio').price_cny, null);
+});

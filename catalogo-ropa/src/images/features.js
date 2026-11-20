@@ -69,6 +69,12 @@ export async function extractFeatures(input) {
     }
   }
   const total = W * H;
+  // Color medio del "primer plano": píxeles que se apartan del fondo (borde).
+  const bMean = border.reduce((a, v) => a + v, 0) / border.length;
+  const fg = [0, 0, 0]; let nFg = 0;
+  for (let i = 0; i < data.length; i += 3) {
+    if (Math.abs(lum(i) - bMean) > 25) { fg[0] += data[i]; fg[1] += data[i + 1]; fg[2] += data[i + 2]; nFg++; }
+  }
   const b = stats(border); const c = stats(center); const a = stats(all);
   return {
     width: meta.width, height: meta.height,
@@ -81,7 +87,7 @@ export async function extractFeatures(input) {
     skinCenterRatio: skinCenter / center.length,
     edgeDensity: edges / total,
     brightRatio: all.filter((v) => v > 225).length / total,
-    // Color medio de la zona central: distingue variantes de color con la misma foto.
-    centerColor: rgbCenter.map((v) => Math.round(v / nCenter)),
+    // Color medio de la prenda (o del centro si no se separa del fondo): distingue variantes de color.
+    centerColor: nFg > total * 0.03 ? fg.map((v) => Math.round(v / nFg)) : rgbCenter.map((v) => Math.round(v / nCenter)),
   };
 }

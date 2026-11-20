@@ -11,4 +11,4 @@ src/server/_generated/
 data/raw/*
 !data/raw/.gitkeep
 examples/raw/
-export/
+/export/

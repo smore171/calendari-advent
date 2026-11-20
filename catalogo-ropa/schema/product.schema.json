@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catalogo-ropa/product.schema.json",
+  "title": "Producto del catálogo",
+  "description": "Estructura común para todos los artículos. Generado por el importador, editado en el panel y leído por el generador de la web.",
+  "type": "object",
+  "required": ["id", "status", "title", "images", "variants"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "Slug único; también es la URL /p/<id>/" },
+    "status": { "enum": ["draft", "approved", "published", "archived"] },
+    "source": {
+      "type": "object",
+      "properties": {
+        "platform": { "enum": ["weidian", "1688", "taobao", "manual", ""] },
+        "url": { "type": "string" },
+        "shop": { "type": "string" },
+        "cost_cny": { "type": ["number", "null"], "description": "Coste unitario del proveedor en CNY. Nunca se publica." },
+        "imported_at": { "type": "string" }
+      }
+    },
+    "title": { "type": "string", "description": "Título en español que se publica" },
+    "title_original": { "type": "string", "description": "Título original del proveedor (referencia interna)" },
+    "category": { "type": "string", "description": "id de una categoría de config/store.config.json" },
+    "price_eur": { "type": ["number", "null"], "description": "PVP con IVA" },
+    "compare_at_eur": { "type": ["number", "null"], "description": "Precio tachado opcional; solo si es real (Ley de Ordenación del Comercio Minorista)" },
+    "composition": { "type": "string", "description": "Obligatoria en la UE. Ej: 70% algodón, 30% poliéster" },
+    "care": { "type": "string" },
+    "fit_note": { "type": "string", "description": "Ej: patrón oversize, recomendamos una talla menos" },
+    "colors": { "type": "array", "items": { "type": "string" } },
+    "sizes": { "type": "array", "items": { "type": "string" } },
+    "variants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sku"],
+        "properties": {
+          "sku": { "type": "string" },
+          "color": { "type": "string" },
+          "size": { "type": "string" },
+          "stock": { "enum": ["in_stock", "on_demand", "out_of_stock"] },
+          "price_eur": { "type": ["number", "null"], "description": "Si es null usa el precio del producto" }
+        }
+      }
+    },
+    "size_chart_cm": {
+      "type": "object",
+      "description": "{ \"M\": { \"pecho\": 112, \"largo\": 70 } }",
+      "additionalProperties": { "type": "object", "additionalProperties": { "type": "number" } }
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "original": { "type": "string", "description": "URL o ruta de la foto original" },
+          "hash": { "type": "string", "description": "dHash perceptual para detectar duplicados" },
+          "type": { "enum": ["packshot", "mannequin", "model", "detail", "size_chart", "discard", "unknown"] },
+          "score": { "type": "number", "description": "Confianza del clasificador 0–1" },
+          "classifier": { "type": "string" },
+          "order": { "type": "integer", "description": "1 = portada" },
+          "publish": { "type": "boolean" },
+          "files": {
+            "type": "object",
+            "description": "Rutas relativas a data/media o URLs públicas en R2",
+            "properties": { "thumb": { "type": "string" }, "card": { "type": "string" }, "zoom": { "type": "string" } }
+          },
+          "width": { "type": "integer" },
+          "height": { "type": "integer" }
+        }
+      }
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "review": {
+      "type": "object",
+      "properties": { "notes": { "type": "string" }, "approved_at": { "type": ["string", "null"] } }
+    }
+  }
+}

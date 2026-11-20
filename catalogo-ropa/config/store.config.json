@@ -1,0 +1,50 @@
+{
+  "store": {
+    "name": "NOMBRE MARCA",
+    "tagline": "Ropa esencial. Calidad de verdad. Precio justo.",
+    "url": "https://www.tudominio.es",
+    "email": "hola@tudominio.es",
+    "whatsapp": "+34600000000",
+    "language": "es",
+    "currency": "EUR"
+  },
+  "legal": {
+    "owner_name": "NOMBRE Y APELLIDOS DEL TITULAR",
+    "owner_nif": "NIF PENDIENTE",
+    "owner_address": "DIRECCIÓN FISCAL PENDIENTE",
+    "withdrawal_days": 14,
+    "return_cost_payer": "el cliente"
+  },
+  "pricing": {
+    "cny_to_eur": 0.13,
+    "shipping_per_unit_eur": 3.5,
+    "import_duty_rate": 0.12,
+    "import_vat_rate": 0.21,
+    "multiplier": 2.6,
+    "min_price_eur": 14.95,
+    "round_to": [0.95, 0.99],
+    "_note": "Todos los valores son SUPUESTOS de ejemplo. Ajusta tipo de cambio, envío unitario real (de tu agente), arancel según código TARIC de cada prenda y el multiplicador objetivo."
+  },
+  "shipping": {
+    "free_from_eur": 60,
+    "standard_eur": 4.95,
+    "cod_fee_eur": 2.5,
+    "cod_enabled": true,
+    "cod_max_order_eur": 300
+  },
+  "images": {
+    "sizes": { "thumb": 480, "card": 900, "zoom": 1600 },
+    "webp_quality": 80,
+    "max_per_product": 12,
+    "public_base_url": "https://media.tudominio.es"
+  },
+  "categories": [
+    { "id": "chaquetas", "name": "Chaquetas y abrigos" },
+    { "id": "sudaderas", "name": "Sudaderas" },
+    { "id": "camisetas", "name": "Camisetas" },
+    { "id": "camisas", "name": "Camisas" },
+    { "id": "pantalones", "name": "Pantalones" },
+    { "id": "punto", "name": "Punto" },
+    { "id": "accesorios", "name": "Accesorios" }
+  ]
+}

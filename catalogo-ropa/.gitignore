@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.dev.vars
+.wrangler/
+# Fotos: se suben a R2, no al repo
+data/media/
+# Generado en cada build
+src/server/_generated/
+# Crudos reales de proveedores (pueden contener datos privados)
+data/raw/*
+!data/raw/.gitkeep
+examples/raw/

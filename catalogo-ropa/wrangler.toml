@@ -1,0 +1,12 @@
+# Cloudflare Pages: https://developers.cloudflare.com/pages/
+name = "catalogo-ropa"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-11-01"
+
+# Base de datos de pedidos (opcional pero recomendada).
+# 1) npx wrangler d1 create catalogo-ropa   → copia el database_id aquí
+# 2) npx wrangler d1 execute catalogo-ropa --remote --file=schema/orders.sql
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "catalogo-ropa"
+# database_id = "PEGA_AQUI_EL_ID"

@@ -131,3 +131,23 @@ test('markdown legal: escapa HTML y renderiza tablas/listas', () => {
   assert.match(html, /<td>2<\/td>/);
   assert.ok(!html.includes('<script>'));
 });
+
+test('tienda: descuento, tallas ordenadas y novedades', async () => {
+  const { discountPct, sortSizes, isNew } = await import('../src/site/templates/pages.js');
+  assert.equal(discountPct({ price_eur: 75, compare_at_eur: 100 }), 25);
+  assert.equal(discountPct({ price_eur: 75, compare_at_eur: null }), 0);
+  assert.deepEqual(sortSizes(['XL', 'S', 'M', 'ÚNICA']), ['S', 'M', 'XL', 'ÚNICA']);
+  assert.deepEqual(sortSizes(['34', '28', '30']), ['28', '30', '34']);
+  const now = Date.parse('2026-11-20T00:00:00Z');
+  assert.equal(isNew({ source: { imported_at: '2026-11-10T00:00:00Z' } }, 30, now), true);
+  assert.equal(isNew({ source: { imported_at: '2026-09-01T00:00:00Z' } }, 30, now), false);
+});
+
+test('glosario: categorías con prioridad correcta', () => {
+  assert.equal(guessCategory('连帽 卫衣 加绒'), 'sudaderas');
+  assert.equal(guessCategory('棒球 帽 纯棉'), 'gorras');
+  assert.equal(guessCategory('POLO衫 针织 短袖'), 'polos');
+  assert.equal(guessCategory('直筒 牛仔裤'), 'vaqueros');
+  assert.equal(guessCategory('工装 短裤'), 'bermudas');
+  assert.equal(provisionalTitle('羊毛 大衣 长款', 'chaquetas'), 'Abrigo de lana');
+});

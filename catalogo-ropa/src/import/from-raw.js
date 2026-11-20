@@ -46,7 +46,7 @@ export function rawToProduct(raw, { config, rawDir = '.', existingIds = new Set(
     url,
     shop: pick(raw, 'shop', 'seller', 'store') || '',
     cost_cny: Number.isFinite(cost) ? cost : null,
-    imported_at: nowIso(),
+    imported_at: pick(raw, 'imported_at') || nowIso(),
   };
   p.title_original = titleOriginal;
   // Título provisional: se traduce/reescribe en el panel (o con el proveedor IA opcional).
@@ -64,7 +64,7 @@ export function rawToProduct(raw, { config, rawDir = '.', existingIds = new Set(
 
   const attrs = pick(raw, 'attributes', 'props', 'specs') || {};
   const compRaw = pick(raw, 'composition') || Object.entries(attrs)
-    .find(([k]) => /面料|成分|材质|composition|material|fabric/i.test(k))?.[1] || '';
+    .find(([k]) => /面料|成分|材质|鞋面|composition|material|fabric/i.test(k))?.[1] || '';
   p.composition = translateComposition(String(compRaw));
 
   p.size_chart_cm = translateSizeChart(pick(raw, 'size_chart', 'sizeChart') || {});
@@ -89,7 +89,11 @@ export function rawToProduct(raw, { config, rawDir = '.', existingIds = new Set(
   p.colors = [...colors];
   p.sizes = [...sizes];
 
-  p.price_eur = suggestPrice(p.source.cost_cny, config.pricing);
+  p.price_eur = Number(pick(raw, 'price_eur')) || suggestPrice(p.source.cost_cny, config.pricing);
+  const compareAt = Number(pick(raw, 'compare_at_eur'));
+  p.compare_at_eur = Number.isFinite(compareAt) && compareAt > p.price_eur ? compareAt : null;
+  if (pick(raw, 'fit_note')) p.fit_note = pick(raw, 'fit_note');
+  if (pick(raw, 'care')) p.care = pick(raw, 'care');
 
   const main = pick(raw, 'images', 'imgs', 'pictures', 'main_images') || [];
   const detail = pick(raw, 'detail_images', 'desc_images') || [];

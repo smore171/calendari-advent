@@ -4,7 +4,7 @@
  *
  * - local: copia data/media a dist/media (para probar en tu PC).
  * - R2 (MEDIA_FROM_R2=1): las fotos se sirven desde config.images.public_base_url.
- * También genera functions/_generated/catalog.js con los precios oficiales:
+ * También genera src/server/_generated/catalog.js con los precios oficiales:
  * el checkout del servidor NUNCA se fía del precio que manda el navegador.
  */
 import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -13,7 +13,7 @@ import { loadConfig, PATHS } from '../lib/config.js';
 import { ensureDir, listJson, readJson, writeJson, formatEur, nowIso } from '../lib/util.js';
 import { validateProduct, publishableImages } from '../lib/schema.js';
 import { layout } from './templates/layout.js';
-import { homePage, categoryPage, productPage, cartPage, thanksPage, sizeGuidePage, imgUrl } from './templates/pages.js';
+import { homePage, catalogPage, promoBanner, productPage, cartPage, thanksPage, sizeGuidePage, imgUrl, discountPct } from './templates/pages.js';
 import { markdownToHtml, fillPlaceholders } from './markdown.js';
 
 function write(rel, html) {
@@ -44,14 +44,29 @@ export async function buildSite({ local = true, log = console.log } = {}) {
     cpSync(PATHS.media, path.join(PATHS.dist, 'media'), { recursive: true, filter: (src) => !/orig-/.test(path.basename(src)) });
   }
 
-  const page = (opts) => layout({ config, ...opts });
+  const groupOf = (catId) => config.categories.find((c) => c.id === catId)?.group || '';
+  const ctx = { groupOf, newDays: config.promotions?.new_days ?? 30 };
+  const counts = {};
+  for (const p of products) counts[p.category] = (counts[p.category] || 0) + 1;
+  const page = (opts) => layout({ config, counts, ...opts });
+  const catalog = (opts) => catalogPage({ allProducts: products, config, mediaBase, ctx, ...opts });
+  const newest = [...products].sort((a, b) => Date.parse(b.source?.imported_at || 0) - Date.parse(a.source?.imported_at || 0));
 
-  write('index.html', page({ body: homePage(products, config, mediaBase), canonical: '/' }));
+  write('index.html', page({ body: homePage(products, config, mediaBase, ctx), canonical: '/' }));
+  write('tienda/index.html', page({ title: 'Tienda', body: catalog({ title: 'Toda la tienda', products: newest }), canonical: '/tienda/' }));
+  write('novedades/index.html', page({ title: 'Novedades', body: catalog({ title: 'Novedades', intro: 'Lo último que hemos añadido.', products: newest.slice(0, 48), active: { special: 'new' } }), canonical: '/novedades/' }));
+  const onSale = products.filter((p) => discountPct(p)).sort((a, b) => discountPct(b) - discountPct(a));
+  write('promociones/index.html', page({ title: 'Promociones', body: catalog({ title: 'Promociones', products: onSale, active: { special: 'sale' }, banner: promoBanner(config) }), canonical: '/promociones/' }));
 
-  for (const cat of config.categories) {
-    const items = products.filter((p) => p.category === cat.id);
+  for (const g of config.category_groups) {
+    const items = newest.filter((p) => groupOf(p.category) === g.id);
     if (!items.length) continue;
-    write(`c/${cat.id}/index.html`, page({ title: cat.name, body: categoryPage(cat, items, mediaBase), canonical: `/c/${cat.id}/` }));
+    write(`g/${g.id}/index.html`, page({ title: g.name, body: catalog({ title: g.name, products: items, active: { group: g.id } }), canonical: `/g/${g.id}/` }));
+  }
+  for (const cat of config.categories) {
+    const items = newest.filter((p) => p.category === cat.id);
+    if (!items.length) continue;
+    write(`c/${cat.id}/index.html`, page({ title: cat.name, body: catalog({ title: cat.name, products: items, active: { group: cat.group, cat: cat.id } }), canonical: `/c/${cat.id}/` }));
   }
 
   for (const p of products) {
@@ -63,10 +78,14 @@ export async function buildSite({ local = true, log = console.log } = {}) {
       brand: { '@type': 'Brand', name: config.store.name },
       offers: { '@type': 'Offer', priceCurrency: 'EUR', price: p.price_eur, availability: 'https://schema.org/InStock', url: `${config.store.url}/p/${p.id}/` },
     };
+    const related = [
+      ...products.filter((r) => r.id !== p.id && r.category === p.category),
+      ...products.filter((r) => r.id !== p.id && r.category !== p.category && groupOf(r.category) === groupOf(p.category)),
+    ].slice(0, 4);
     write(`p/${p.id}/index.html`, page({
       title: p.title,
       description: `${p.title}. ${p.composition}. ${formatEur(p.price_eur)}.`,
-      body: productPage(p, config, mediaBase), canonical: `/p/${p.id}/`, jsonLd,
+      body: productPage(p, config, mediaBase, ctx, related), canonical: `/p/${p.id}/`, jsonLd,
     }));
   }
 
@@ -89,7 +108,7 @@ export async function buildSite({ local = true, log = console.log } = {}) {
   }
 
   // SEO
-  const urls = ['/', ...config.categories.filter((c) => products.some((p) => p.category === c.id)).map((c) => `/c/${c.id}/`), ...products.map((p) => `/p/${p.id}/`)];
+  const urls = ['/', '/tienda/', '/novedades/', '/promociones/', ...config.category_groups.filter((g) => products.some((p) => groupOf(p.category) === g.id)).map((g) => `/g/${g.id}/`), ...config.categories.filter((c) => counts[c.id]).map((c) => `/c/${c.id}/`), ...products.map((p) => `/p/${p.id}/`)];
   write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${config.store.url}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
   write('robots.txt', `User-agent: *\nDisallow: /carrito/\nDisallow: /gracias/\nSitemap: ${config.store.url}/sitemap.xml\n`);
 
@@ -101,7 +120,7 @@ export async function buildSite({ local = true, log = console.log } = {}) {
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; img-src 'self' data:${mediaOrigin}; style-src 'self'; script-src 'self'; connect-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:${mediaOrigin}; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self'; connect-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'
 /assets/*
   Cache-Control: public, max-age=86400
 /media/*
@@ -109,16 +128,16 @@ export async function buildSite({ local = true, log = console.log } = {}) {
 `);
 
   // Catálogo de precios para el servidor (checkout) y para el cliente.
-  const catalog = {};
+  const priceCatalog = {};
   for (const p of products) {
     for (const v of p.variants) {
       if (v.stock === 'out_of_stock') continue;
-      catalog[v.sku] = { product: p.id, title: `${p.title} · ${[v.color, v.size].filter(Boolean).join(' / ')}`, price: v.price_eur ?? p.price_eur, stock: v.stock };
+      priceCatalog[v.sku] = { product: p.id, title: `${p.title} · ${[v.color, v.size].filter(Boolean).join(' / ')}`, price: v.price_eur ?? p.price_eur, stock: v.stock };
     }
   }
   ensureDir(PATHS.generated);
   writeFileSync(path.join(PATHS.generated, 'catalog.js'),
-    `// GENERADO por src/site/build.js — no editar a mano.\nexport const CATALOG = ${JSON.stringify(catalog, null, 2)};\nexport const SHIPPING = ${JSON.stringify(config.shipping, null, 2)};\nexport const STORE = ${JSON.stringify({ name: config.store.name, url: config.store.url }, null, 2)};\n`);
+    `// GENERADO por src/site/build.js — no editar a mano.\nexport const CATALOG = ${JSON.stringify(priceCatalog, null, 2)};\nexport const SHIPPING = ${JSON.stringify(config.shipping, null, 2)};\nexport const STORE = ${JSON.stringify({ name: config.store.name, url: config.store.url }, null, 2)};\n`);
 
   log(`Web generada en dist/: ${products.length} productos, ${urls.length} URLs (fotos: ${local ? 'locales' : mediaBase})`);
   return { products: products.length };

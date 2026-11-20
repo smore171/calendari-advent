@@ -12,6 +12,10 @@ link / export de Sourcebase ─► importar ─► fotos (clasificar, ordenar, W
 - **Portada automática**: la foto 1 siempre es el producto en primer plano (packshot). Después maniquí, modelo y detalle. Tablas de tallas, banners y duplicados no se publican.
 - **Panel local** para revisar en lote: título, precio con margen, composición, medidas y orden de fotos.
 - **Web estática** (HTML + CSS + JS, sin frameworks): rápida, barata y fácil de alojar gratis.
+  - Inicio con promoción (cuenta atrás y código), bloques Ropa/Calzado/Accesorios, categorías, novedades y ofertas.
+  - Menú con desplegable por grupo; en móvil, menú lateral.
+  - Catálogo (`/tienda/`, `/g/<grupo>/`, `/c/<categoría>/`, `/novedades/`, `/promociones/`) con barra lateral de categorías y filtros de talla, color, precio, ofertas y novedades, búsqueda y orden.
+  - Etiquetas `-25 %` y `Nuevo`, precio tachado y muestras de color.
 - **Pago** con Stripe Checkout (la tarjeta nunca pasa por tu servidor) y **contra reembolso** con confirmación por WhatsApp.
 - **Avisos de pedido** por Telegram (opcional) y pedidos guardados en Cloudflare D1.
 
@@ -20,10 +24,10 @@ link / export de Sourcebase ─► importar ─► fotos (clasificar, ordenar, W
 ```bash
 cd catalogo-ropa
 npm install
-npm run demo        # crea 4 productos de prueba con fotos sintéticas y genera la web
+npm run demo        # crea 16 productos de prueba con fotos sintéticas y genera la web
 npm run preview     # tienda en http://localhost:8788
 npm run admin       # panel en http://localhost:4321 (en otra terminal)
-npm test            # 12 tests
+npm test            # 14 tests
 ```
 
 La demo incluye a propósito una camisa **sin composición**: el sistema no deja publicarla hasta que la completes en el panel.
@@ -66,6 +70,13 @@ El importador acepta varios nombres de campo habituales (`title`/`name`, `images
 | Claude con visión (opcional) | Por imagen, [según tarifa](https://docs.claude.com) | Distingue los 6 tipos, detecta texto chino y marcas de agua | Necesita `ANTHROPIC_API_KEY` |
 
 Solo se manda a la IA lo que el heurístico marca con confianza < `AI_THRESHOLD` (0,6). Así pagas por una fracción de las fotos. En el panel ves el motivo y la confianza de cada foto, y con ★ fijas la portada a mano.
+
+## Categorías y promociones
+
+En `config/store.config.json`:
+- `category_groups` y `categories` (cada categoría con su `group`). Solo se muestran las que tienen productos.
+- `promotions`: texto de la barra superior, titular del inicio, código y fecha de fin de la cuenta atrás. **En V1 el código es solo informativo**: para que descuente hay que crearlo como cupón en Stripe (ver roadmap).
+- El precio tachado (`compare_at_eur`) solo debe usarse si ese precio se aplicó de verdad antes.
 
 ## Precio
 

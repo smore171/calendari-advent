@@ -10,7 +10,14 @@
 - [x] Subida a R2 sin dependencias
 - [x] Tests (12)
 
+## V1.1 (rediseño)
+- [x] Inicio con hero de promoción, cuenta atrás, código copiable, grupos, categorías, novedades y ofertas
+- [x] Menú con desplegables y menú lateral en móvil
+- [x] Catálogo con barra lateral: árbol de categorías, filtros (talla, color, precio, ofertas, novedades), búsqueda y orden
+- [x] Página de promociones y productos relacionados en la ficha
+
 ## V2 — integración real
+- [ ] Código promocional real: cupón de Stripe (`allow_promotion_codes`) y descuento también en contra reembolso
 - [ ] Conectar la salida real de Sourcebase y ajustar `pick()` (revisar con su código)
 - [ ] Probar el clasificador con 100–200 fotos reales y ajustar los umbrales (medir el acierto)
 - [ ] Extraer medidas y composición de la **tabla de tallas en imagen** con IA (hoy solo se clasifica)

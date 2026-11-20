@@ -16,7 +16,7 @@ export const FIBERS = {
   '棉': 'algodón', '纯棉': 'algodón', '羊毛': 'lana', '羊绒': 'cachemira', '聚酯纤维': 'poliéster',
   '涤纶': 'poliéster', '锦纶': 'poliamida', '尼龙': 'poliamida', '氨纶': 'elastano', '粘纤': 'viscosa',
   '粘胶纤维': 'viscosa', '亚麻': 'lino', '麻': 'lino', '真丝': 'seda', '桑蚕丝': 'seda', '腈纶': 'acrílico',
-  '莫代尔': 'modal', '天丝': 'lyocell', '莱赛尔': 'lyocell',
+  '莫代尔': 'modal', '天丝': 'lyocell', '莱赛尔': 'lyocell', '牛皮': 'piel de vacuno', '真皮': 'piel', '帆布': 'algodón (lona)',
 };
 
 export const MEASURES = {
@@ -25,13 +25,23 @@ export const MEASURES = {
 };
 
 const CATEGORY_HINTS = [
+  // Orden importa: lo más específico primero.
+  ['zapatillas', /运动鞋|板鞋|跑鞋|休闲鞋|sneaker|zapatilla/i],
+  ['botas', /靴|boot|bota/i],
+  ['zapatos', /皮鞋|乐福|loafer|derby|zapato/i],
+  ['gorras', /(?<!连)帽|棒球|\bcap\b|\bhat\b|beanie|gorra|gorro/i],
+  ['bufandas', /围巾|scarf|bufanda/i],
+  ['cinturones', /腰带|皮带|belt|cintur/i],
+  ['bolsos', /包|bag|backpack|bolso|mochila/i],
   ['chaquetas', /外套|夹克|大衣|风衣|羽绒|棉服|jacket|coat|chaqueta|abrigo|parka/i],
+  ['polos', /POLO衫|polo/i],
   ['sudaderas', /卫衣|hoodie|sweatshirt|sudadera/i],
   ['punto', /毛衣|针织|开衫|knit|sweater|cardigan|jersey|punto/i],
   ['camisas', /衬衫|shirt|camisa/i],
   ['camisetas', /T恤|短袖|tee|t-shirt|camiseta/i],
-  ['pantalones', /裤|pants|trousers|jeans|pantal/i],
-  ['accesorios', /帽|围巾|包|cap|hat|scarf|bag|gorra|bufanda/i],
+  ['vaqueros', /牛仔裤|jeans|vaquero/i],
+  ['bermudas', /短裤|shorts|bermuda/i],
+  ['pantalones', /裤|pants|trousers|pantal/i],
 ];
 
 export function translateTerm(text) {
@@ -71,16 +81,16 @@ export function translateSizeChart(chart) {
   return out;
 }
 
-const SINGULAR = { chaquetas: 'Chaqueta', sudaderas: 'Sudadera', punto: 'Jersey de punto', camisas: 'Camisa', camisetas: 'Camiseta', pantalones: 'Pantalón', accesorios: 'Accesorio' };
-const MATERIAL_HINTS = [[/羊绒|cashmere/i, 'de cachemira'], [/羊毛|wool/i, 'de lana'], [/亚麻|linen/i, 'de lino'], [/纯棉|全棉|100%棉|cotton/i, 'de algodón'], [/真丝|silk/i, 'de seda'], [/灯芯绒|corduroy/i, 'de pana'], [/牛仔|denim/i, 'denim']];
-const STYLE_HINTS = [[/oversize|宽松|落肩/i, 'oversize'], [/短款|cropped/i, 'corta'], [/直筒|straight/i, 'recto'], [/重磅|heavyweight/i, 'gruesa'], [/连帽|hood/i, 'con capucha'], [/长袖/i, 'de manga larga'], [/短袖/i, 'de manga corta']];
+const SINGULAR = { chaquetas: 'Chaqueta', sudaderas: 'Sudadera', punto: 'Jersey de punto', camisas: 'Camisa', camisetas: 'Camiseta', polos: 'Polo', pantalones: 'Pantalón', vaqueros: 'Vaquero', bermudas: 'Bermuda', zapatillas: 'Zapatillas', botas: 'Botas', zapatos: 'Zapatos', gorras: 'Gorra', bolsos: 'Bolso', cinturones: 'Cinturón', bufandas: 'Bufanda' };
+const MATERIAL_HINTS = [[/羊绒|cashmere/i, 'de cachemira'], [/羊毛|wool/i, 'de lana'], [/亚麻|linen/i, 'de lino'], [/纯棉|全棉|100%棉|cotton/i, 'de algodón'], [/真丝|silk/i, 'de seda'], [/灯芯绒|corduroy/i, 'de pana'], [/牛仔|denim/i, 'denim'], [/帆布|canvas/i, 'de lona']];
+const STYLE_HINTS = [[/oversize|宽松|落肩/i, 'oversize'], [/短款|cropped/i, 'corta'], [/直筒|straight/i, 'recto'], [/皮|leather/i, 'de piel'], [/复古|vintage|retro/i, 'retro'], [/工装|cargo/i, 'cargo'], [/重磅|heavyweight/i, 'gruesa'], [/连帽|hood/i, 'con capucha'], [/长袖/i, 'de manga larga'], [/短袖/i, 'de manga corta']];
 
 /**
  * Título provisional en español a partir de pistas del título chino
  * ("重磅 纯棉 卫衣 宽松" → "Sudadera oversize de algodón"). Se revisa en el panel.
  */
 export function provisionalTitle(original, category) {
-  const base = SINGULAR[category] || 'Prenda';
+  const base = category === 'chaquetas' && /大衣|长款外套|coat|abrigo/i.test(original) ? 'Abrigo' : (SINGULAR[category] || 'Prenda');
   const style = STYLE_HINTS.filter(([re]) => re.test(original)).map(([, w]) => w).slice(0, 2);
   const material = MATERIAL_HINTS.find(([re]) => re.test(original))?.[1];
   return [base, ...style, material].filter(Boolean).join(' ');

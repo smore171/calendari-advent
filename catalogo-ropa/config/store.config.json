@@ -22,7 +22,10 @@
     "import_vat_rate": 0.21,
     "multiplier": 2.6,
     "min_price_eur": 14.95,
-    "round_to": [0.95, 0.99],
+    "round_to": [
+      0.95,
+      0.99
+    ],
     "_note": "Todos los valores son SUPUESTOS de ejemplo. Ajusta tipo de cambio, envío unitario real (de tu agente), arancel según código TARIC de cada prenda y el multiplicador objetivo."
   },
   "shipping": {
@@ -33,18 +36,123 @@
     "cod_max_order_eur": 300
   },
   "images": {
-    "sizes": { "thumb": 480, "card": 900, "zoom": 1600 },
+    "sizes": {
+      "thumb": 480,
+      "card": 900,
+      "zoom": 1600
+    },
     "webp_quality": 80,
     "max_per_product": 12,
     "public_base_url": "https://media.tudominio.es"
   },
   "categories": [
-    { "id": "chaquetas", "name": "Chaquetas y abrigos" },
-    { "id": "sudaderas", "name": "Sudaderas" },
-    { "id": "camisetas", "name": "Camisetas" },
-    { "id": "camisas", "name": "Camisas" },
-    { "id": "pantalones", "name": "Pantalones" },
-    { "id": "punto", "name": "Punto" },
-    { "id": "accesorios", "name": "Accesorios" }
-  ]
+    {
+      "id": "camisetas",
+      "name": "Camisetas",
+      "group": "ropa"
+    },
+    {
+      "id": "camisas",
+      "name": "Camisas",
+      "group": "ropa"
+    },
+    {
+      "id": "polos",
+      "name": "Polos",
+      "group": "ropa"
+    },
+    {
+      "id": "sudaderas",
+      "name": "Sudaderas",
+      "group": "ropa"
+    },
+    {
+      "id": "punto",
+      "name": "Punto y jerséis",
+      "group": "ropa"
+    },
+    {
+      "id": "chaquetas",
+      "name": "Chaquetas y abrigos",
+      "group": "ropa"
+    },
+    {
+      "id": "pantalones",
+      "name": "Pantalones",
+      "group": "ropa"
+    },
+    {
+      "id": "vaqueros",
+      "name": "Vaqueros",
+      "group": "ropa"
+    },
+    {
+      "id": "bermudas",
+      "name": "Bermudas",
+      "group": "ropa"
+    },
+    {
+      "id": "zapatillas",
+      "name": "Zapatillas",
+      "group": "calzado"
+    },
+    {
+      "id": "botas",
+      "name": "Botas",
+      "group": "calzado"
+    },
+    {
+      "id": "zapatos",
+      "name": "Zapatos",
+      "group": "calzado"
+    },
+    {
+      "id": "gorras",
+      "name": "Gorras y gorros",
+      "group": "accesorios"
+    },
+    {
+      "id": "bolsos",
+      "name": "Bolsos y mochilas",
+      "group": "accesorios"
+    },
+    {
+      "id": "cinturones",
+      "name": "Cinturones",
+      "group": "accesorios"
+    },
+    {
+      "id": "bufandas",
+      "name": "Bufandas",
+      "group": "accesorios"
+    }
+  ],
+  "category_groups": [
+    {
+      "id": "ropa",
+      "name": "Ropa"
+    },
+    {
+      "id": "calzado",
+      "name": "Calzado"
+    },
+    {
+      "id": "accesorios",
+      "name": "Accesorios"
+    }
+  ],
+  "promotions": {
+    "enabled": true,
+    "topbar": "BLACK WEEK · -20% EXTRA con el código BLACK20",
+    "hero": {
+      "eyebrow": "Black Week",
+      "title": "Hasta -40% en abrigos y punto",
+      "subtitle": "Solo hasta el domingo. Envío gratis desde 60 €.",
+      "cta": "Ver promociones",
+      "ends_at": "2026-11-30T23:59:59+01:00"
+    },
+    "code": "BLACK20",
+    "new_days": 30,
+    "_note": "El código es solo texto en V1: para que descuente de verdad hay que crearlo como cupón en Stripe (V2). Los precios tachados solo si fueron reales (precio anterior aplicado)."
+  }
 }

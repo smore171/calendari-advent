@@ -48,10 +48,13 @@ export function brandReason(title, tagger) {
 export function splitVariantTitle(title, options = []) {
   const colorOpt = options.find((o) => COLOR_OPT.test(o.name));
   const sizeOpt = options.find((o) => SIZE_OPT.test(o.name) && o !== colorOpt);
-  const has = (opt) => opt?.values.find((v) => title.includes(v));
+  const tokens = title.split(/[;；,，/\s|]+/).filter(Boolean);
+  // Coincidencia exacta por fragmento; si no, el valor más largo contenido (XL antes que L).
+  const has = (opt) => opt?.values.find((v) => tokens.includes(v))
+    || [...(opt?.values || [])].sort((a, b) => b.length - a.length).find((v) => title.includes(v));
   let color = has(colorOpt); let size = has(sizeOpt);
   if (!color || !size) {
-    const parts = title.split(/[;；,，/\s|]+/).filter(Boolean);
+    const parts = tokens;
     const sizeLike = (x) => /^(XXS|XS|S|M|L|XL|XXL|[2-6]XL|\d{2,3}|均码|F|FREE)$/i.test(x);
     size ||= parts.find(sizeLike);
     color ||= parts.find((p) => !sizeLike(p)) || null;

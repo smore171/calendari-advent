@@ -2,7 +2,7 @@
  * Sube data/media/** a Cloudflare R2 (API compatible con S3) sin dependencias.
  * Variables de entorno (ver .env.example):
  *   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
- * Solo sube archivos .webp que no existan ya (HEAD previo).
+ * Solo sube .webp y *-shopify.jpg que no existan ya (HEAD previo).
  */
 import { createHash, createHmac } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
@@ -37,7 +37,7 @@ async function walk(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) out.push(...await walk(p));
-    else if (e.name.endsWith('.webp')) out.push(p);
+    else if (e.name.endsWith('.webp') || e.name.endsWith('-shopify.jpg')) out.push(p);
   }
   return out;
 }
@@ -57,7 +57,8 @@ export async function uploadMedia({ log = console.log } = {}) {
     const exists = await fetch(head.url, { method: 'HEAD', headers: head.headers });
     if (exists.ok) { skipped++; continue; }
     const body = await readFile(file);
-    const put = signRequest({ ...auth, method: 'PUT', key, body, contentType: 'image/webp' });
+    const type = file.endsWith('.jpg') ? 'image/jpeg' : 'image/webp';
+    const put = signRequest({ ...auth, method: 'PUT', key, body, contentType: type });
     const res = await fetch(put.url, { method: 'PUT', headers: { ...put.headers, 'cache-control': 'public, max-age=31536000, immutable' }, body });
     if (!res.ok) throw new Error(`R2 ${res.status} subiendo ${key}: ${await res.text()}`);
     uploaded++;

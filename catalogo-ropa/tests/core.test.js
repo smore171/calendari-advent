@@ -184,3 +184,31 @@ test('Yupoo: URL, listado, álbum y conversión a producto', async () => {
   assert.deepEqual(extractHints('size: M L XL').sizes, ['M', 'L', 'XL']);
   assert.equal(extractHints('sin precio').price_cny, null);
 });
+
+test('Shopify CSV: cabeceras, variantes, imágenes extra y escapado', async () => {
+  const { productRows, toCsv, COLUMNS, csvCell } = await import('../src/export/shopify-csv.js');
+  const config = { store: { name: 'Marca' }, pricing, images: { public_base_url: 'https://media.x.es/' },
+    categories: [{ id: 'sudaderas', name: 'Sudaderas', group: 'ropa' }], category_groups: [{ id: 'ropa', name: 'Ropa' }] };
+  const p = { ...emptyProduct(), id: 'sudadera-1', status: 'published', title: 'Sudadera "pesada"', category: 'sudaderas',
+    price_eur: 49.95, compare_at_eur: 69.95, composition: '100% algodón', colors: ['Gris'], sizes: ['M', 'S'],
+    source: { cost_cny: 89 },
+    variants: [{ sku: 'A-M', color: 'Gris', size: 'M', stock: 'on_demand' }, { sku: 'A-S', color: 'Gris', size: 'S', stock: 'in_stock' }],
+    images: [1, 2, 3].map((n) => ({ type: 'packshot', order: n, publish: true, files: { shopify: `sudadera-1/${n}-shopify.jpg` } })) };
+  const rows = productRows(p, config);
+  assert.equal(rows.length, 3, '2 variantes + 1 fila solo de imagen');
+  assert.equal(rows[0]['Option1 name'], 'Color');
+  assert.equal(rows[0]['Option2 name'], 'Talla');
+  assert.deepEqual(rows.slice(0, 2).map((r) => r['Option2 value']), ['S', 'M'], 'tallas ordenadas');
+  assert.equal(rows[0]['Product image URL'], 'https://media.x.es/sudadera-1/1-shopify.jpg');
+  assert.equal(rows[2]['Image position'], 3);
+  assert.equal(rows[2].SKU, '');
+  assert.equal(rows[0]['Inventory tracker'], 'shopify');
+  assert.equal(rows[1]['Inventory tracker'], '');
+  assert.equal(rows[0].Status, 'active');
+  assert.match(rows[0].Tags, /Oferta/);
+  assert.equal(csvCell('a "b", c'), '"a ""b"", c"');
+  const csv = toCsv(rows);
+  assert.ok(csv.startsWith('﻿Title,URL handle,Description'));
+  assert.equal(csv.trim().split('\r\n').length, 4);
+  assert.equal(COLUMNS.length, new Set(COLUMNS).size);
+});

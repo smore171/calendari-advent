@@ -7,12 +7,13 @@
  *   node src/cli.js approve [--all|<id>]             pasa a approved si no hay errores
  *   node src/cli.js validate                         informe de errores/avisos
  *   node src/cli.js build                            genera la web en dist/
+ *   node src/cli.js shopify [--images r2|source] [--include-drafts] [--out f.csv]   CSV para importar en Shopify
  *   node src/cli.js upload                           sube data/media a R2
  */
 import { statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { loadConfig, PATHS } from './lib/config.js';
-import { readJson, writeJson, listJson, nowIso } from './lib/util.js';
+import { readJson, writeJson, listJson, nowIso, ensureDir } from './lib/util.js';
 import { validateProduct } from './lib/schema.js';
 import { rawToProduct } from './import/from-raw.js';
 
@@ -110,6 +111,24 @@ async function main() {
     case 'build': {
       const { buildSite } = await import('./site/build.js');
       await buildSite({ local: args.includes('--local') || !process.env.MEDIA_FROM_R2 });
+      break;
+    }
+    case 'shopify': {
+      const { exportShopifyCsv } = await import('./export/shopify-csv.js');
+      const { ensureShopifyJpg } = await import('./images/process.js');
+      const opt = (name) => { const i = args.indexOf(`--${name}`); return i !== -1 ? args[i + 1] : undefined; };
+      const images = opt('images') || 'r2';
+      const statuses = args.includes('--include-drafts') ? ['draft', 'approved', 'published'] : ['approved', 'published'];
+      const products = allProducts().filter((p) => statuses.includes(p.status));
+      if (images === 'r2') {
+        for (const p of products) { await ensureShopifyJpg(p); writeJson(productFile(p.id), p); }
+        console.log('JPG para Shopify generados. Súbelos con: npm run upload');
+      }
+      const out = path.resolve(opt('out') || path.join(PATHS.root, 'export', `shopify-${new Date().toISOString().slice(0, 10)}.csv`));
+      ensureDir(path.dirname(out));
+      exportShopifyCsv(products, config, { out, images });
+      const drafts = allProducts().filter((p) => p.status === 'draft').length;
+      if (drafts && !args.includes('--include-drafts')) console.log(`  (${drafts} borrador(es) sin aprobar no incluidos; usa --include-drafts para subirlos como borrador)`);
       break;
     }
     case 'upload': {

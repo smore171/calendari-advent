@@ -65,6 +65,24 @@ export async function ensureVariants(product, config) {
   return product;
 }
 
+/**
+ * JPG para Shopify (máx. 2048 px, sin recortar, fondo intacto): Shopify recorta
+ * según el tema, y el JPG evita dudas de compatibilidad con WebP.
+ */
+export async function ensureShopifyJpg(product) {
+  const dir = ensureDir(path.join(PATHS.media, product.id));
+  for (const [idx, img] of product.images.entries()) {
+    if (!img.publish || !img.local) continue;
+    const rel = `${product.id}/${img.hash || String(idx).padStart(2, '0')}-shopify.jpg`;
+    if (img.files?.shopify === rel && existsSync(path.join(PATHS.media, rel))) continue;
+    await sharp(path.join(PATHS.root, img.local)).rotate()
+      .resize({ width: 2048, height: 2048, fit: 'inside', withoutEnlargement: true })
+      .flatten({ background: '#ffffff' }).jpeg({ quality: 86, mozjpeg: true }).toFile(path.join(PATHS.media, rel));
+    img.files = { ...(img.files || {}), shopify: rel };
+  }
+  return product;
+}
+
 export async function processProductImages(product, config, { useAi = true, log = console.log } = {}) {
   const dir = ensureDir(path.join(PATHS.media, product.id));
   const aiOn = useAi && claude.isAvailable();

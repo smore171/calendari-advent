@@ -27,7 +27,7 @@ npm install
 npm run demo        # crea 16 productos de prueba con fotos sintéticas y genera la web
 npm run preview     # tienda en http://localhost:8788
 npm run admin       # panel en http://localhost:4321 (en otra terminal)
-npm test            # 15 tests
+npm test            # 16 tests
 ```
 
 La demo incluye a propósito una camisa **sin composición**: el sistema no deja publicarla hasta que la completes en el panel.
@@ -60,6 +60,28 @@ Cada álbum se convierte en un producto en borrador: título, fotos (en tamaño 
 - `--html archivo.html` permite importar un álbum guardado desde el navegador si Yupoo bloquea las peticiones.
 - **Probado con páginas de ejemplo, no contra Yupoo en vivo**: si cambian su HTML, los ajustes están en `src/import/yupoo.js`.
 - Muchos catálogos de Yupoo son réplicas de marcas: importa solo los de tu proveedor de marca blanca.
+
+### Exportar a Shopify (CSV masivo)
+
+Si prefieres vender en Shopify en lugar de la web propia, el flujo de importación, fotos y panel es el mismo y al final sacas un CSV:
+
+```bash
+npm run yupoo -- https://TIENDA.x.yupoo.com/albums --limit 100   # o Sourcebase
+npm run images -- --all
+npm run admin                       # revisa y aprueba
+npm run shopify                     # genera JPG para Shopify + export/shopify-AAAA-MM-DD.csv
+npm run upload                      # sube las fotos a R2 (Shopify las descarga de ahí)
+```
+
+Después, en Shopify: **Productos → Importar → sube el CSV**.
+
+- Formato de columnas actual de Shopify (`URL handle`, `Option1 name`, `Product image URL`…), con opciones **Color** y **Talla**, una fila por variante y filas extra para el resto de fotos.
+- Incluye precio, precio tachado, coste por artículo (según tu fórmula), peso estimado por categoría, etiquetas (grupo, categoría, colores, `Oferta`) y descripción con composición y tabla de medidas.
+- Productos aprobados → `active`; con `--include-drafts` también sube los borradores como `draft`.
+- En stock → Shopify controla el inventario (empieza a 0, pon la cantidad real); bajo pedido → sin control de inventario.
+- **Fotos**: Shopify las descarga de una URL pública. Con `--images r2` (por defecto) usa tu bucket R2. Con `--images source` usa las URLs del proveedor, pero **Yupoo bloquea esas descargas**: para Yupoo, usa R2.
+- Archivos de más de 14 MB se parten en varios CSV automáticamente.
+- Pesos por categoría y coste por artículo son estimaciones: revísalos.
 
 ### Conectar Sourcebase
 

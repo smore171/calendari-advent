@@ -11,6 +11,7 @@ import { loadConfig, PATHS } from '../lib/config.js';
 import { readJson, writeJson, listJson, nowIso } from '../lib/util.js';
 import { validateProduct, publishableImages, makeSku, STATUSES, IMAGE_TYPES, STOCK_MODES } from '../lib/schema.js';
 import { marginReport } from '../lib/pricing.js';
+import { loadSuppliers, saveSuppliers, supplierStats } from '../lib/suppliers.js';
 
 const PORT = Number(process.env.ADMIN_PORT || 4321);
 const config = loadConfig();
@@ -22,6 +23,7 @@ function summary(p) {
   const cover = publishableImages(p)[0];
   return {
     id: p.id, title: p.title, status: p.status, category: p.category, price_eur: p.price_eur,
+    supplier: p.source?.supplier_id || 'sin-proveedor', supplier_category: p.source?.supplier_category || '',
     cover: cover?.files?.thumb ? `/media/${cover.files.thumb}` : (cover?.local ? `/${cover.local}` : null),
     cover_type: cover?.type || null, images: publishableImages(p).length,
     errors: v.errors, warnings: v.warnings,
@@ -42,6 +44,18 @@ const send = (res, code, data) => { res.writeHead(code, { 'content-type': 'appli
 async function api(req, res, url) {
   const parts = url.pathname.split('/').filter(Boolean); // ['api', 'products', id?, action?]
   if (parts[1] === 'meta') return send(res, 200, { categories: config.categories, statuses: STATUSES, imageTypes: IMAGE_TYPES });
+  if (parts[1] === 'suppliers') {
+    const reg = loadSuppliers();
+    if (req.method === 'GET') return send(res, 200, supplierStats(listJson(PATHS.products).map(readJson), reg));
+    if (req.method === 'PUT' && parts[2] && reg[parts[2]]) {
+      const { name, notes } = await readBody(req);
+      if (typeof name === 'string' && name.trim()) reg[parts[2]].name = name.trim().slice(0, 80);
+      if (typeof notes === 'string') reg[parts[2]].notes = notes.slice(0, 2000);
+      saveSuppliers(reg);
+      return send(res, 200, reg[parts[2]]);
+    }
+    return send(res, 404, { error: 'proveedor no encontrado' });
+  }
   if (parts[1] !== 'products') return send(res, 404, { error: 'no existe' });
 
   if (!parts[2]) {

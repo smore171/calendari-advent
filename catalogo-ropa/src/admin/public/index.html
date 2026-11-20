@@ -11,17 +11,20 @@
   <strong>Panel de catálogo</strong>
   <div class="filters">
     <select id="f-status"><option value="">Todos los estados</option></select>
+    <select id="f-sup"><option value="">Todos los proveedores</option></select>
     <select id="f-cat"><option value="">Todas las categorías</option></select>
     <label><input type="checkbox" id="f-errors"> Solo con errores</label>
     <input id="f-q" placeholder="Buscar…">
   </div>
   <div class="bulk">
     <span id="sel-count">0 seleccionados</span>
+    <button class="ghost" id="sel-all">Seleccionar los visibles</button>
     <button data-bulk="approve">Aprobar</button>
     <select id="bulk-cat"><option value="">Mover a categoría…</option></select>
     <button data-bulk="archive">Archivar</button>
   </div>
 </header>
+<section id="sup-card" class="sup-card" hidden></section>
 <main>
   <section id="list" class="list"></section>
   <section id="editor" class="editor" hidden></section>

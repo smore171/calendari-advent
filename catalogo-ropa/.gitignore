@@ -12,3 +12,4 @@ data/raw/*
 !data/raw/.gitkeep
 examples/raw/
 /export/
+data/suppliers.json

@@ -231,3 +231,17 @@ test('Sourcebase: filtro de marcas, variantes y conversión', async () => {
   assert.equal(p.variants.find((v) => v.size === 'L').stock, 'out_of_stock');
   assert.ok(p.variants.find((v) => v.size === 'L').price_eur > p.price_eur);
 });
+
+test('proveedores: id estable, registro y resumen', async () => {
+  const { supplierIdFor, touchSupplier, supplierStats } = await import('../src/lib/suppliers.js');
+  assert.equal(supplierIdFor({ platform: 'yupoo', shop: 'Mi Tienda' }), 'yupoo-mi-tienda');
+  assert.equal(supplierIdFor({ platform: 'weidian', store_id: '123' }), 'weidian-123');
+  const p = rawToProduct({ url: 'https://weidian.com/item.html?itemID=9', title: '卫衣', shop: 'Tienda A', store_id: '555', price_cny: 50 }, { config: { pricing } });
+  assert.equal(p.source.supplier_id, 'weidian-555');
+  const reg = touchSupplier({}, p);
+  assert.equal(reg['weidian-555'].name, 'Tienda A');
+  const stats = supplierStats([p, { ...p, status: 'approved' }, { ...p, source: {} }], reg);
+  assert.equal(stats[0].total, 2);
+  assert.equal(stats[0].approved, 1);
+  assert.equal(stats.find((s) => s.id === 'sin-proveedor').total, 1);
+});

@@ -21,6 +21,7 @@ import { createHash } from 'node:crypto';
 import { emptyProduct, makeSku } from '../lib/schema.js';
 import { suggestPrice } from '../lib/pricing.js';
 import { slugify, nowIso } from '../lib/util.js';
+import { supplierIdFor } from '../lib/suppliers.js';
 import { translateTerm, translateSizeChart, translateComposition, guessCategory, provisionalTitle } from './glossary.js';
 
 function pick(obj, ...keys) {
@@ -49,7 +50,10 @@ export function rawToProduct(raw, { config, rawDir = '.', existingIds = new Set(
     cost_cny: Number.isFinite(cost) ? cost : null,
     imported_at: pick(raw, 'imported_at') || nowIso(),
     ...(pick(raw, 'referer') ? { referer: pick(raw, 'referer') } : {}),
+    supplier_url: pick(raw, 'supplier_url', 'store_url') || '',
   };
+  p.source.supplier_id = pick(raw, 'supplier_id') || supplierIdFor({ platform: p.source.platform, shop: p.source.shop, store_id: pick(raw, 'store_id') });
+  if (pick(raw, 'supplier_category')) p.source.supplier_category = String(pick(raw, 'supplier_category'));
   p.title_original = titleOriginal;
   if (pick(raw, 'notes')) p.review.notes = String(pick(raw, 'notes'));
   // Título provisional: se traduce/reescribe en el panel (o con el proveedor IA opcional).

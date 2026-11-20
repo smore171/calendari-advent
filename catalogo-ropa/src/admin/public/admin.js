@@ -7,7 +7,7 @@ const api = async (url, opts = {}) => {
   return data;
 };
 
-let meta; let items = []; let selected = new Set(); let current = null; let imgs = [];
+let meta; let items = []; let suppliers = []; let selected = new Set(); let current = null; let imgs = [];
 
 async function init() {
   meta = await api('/api/meta');
@@ -17,22 +17,52 @@ async function init() {
     $('#bulk-cat').insertAdjacentHTML('beforeend', `<option value="${c.id}">${esc(c.name)}</option>`);
   }
   ['#f-status', '#f-cat', '#f-errors', '#f-q'].forEach((s) => $(s).addEventListener('input', renderList));
+  $('#f-sup').addEventListener('input', () => { renderSupplier(); renderList(); });
+  $('#sel-all').addEventListener('click', () => { visible().forEach((p) => selected.add(p.id)); renderList(); });
   document.querySelectorAll('[data-bulk]').forEach((b) => b.addEventListener('click', () => bulk(b.dataset.bulk)));
   $('#bulk-cat').addEventListener('change', (e) => e.target.value && bulk('category', e.target.value));
   await loadList();
 }
 
-async function loadList() { items = await api('/api/products'); renderList(); }
+async function loadList() {
+  [items, suppliers] = await Promise.all([api('/api/products'), api('/api/suppliers')]);
+  const cur = $('#f-sup').value;
+  $('#f-sup').innerHTML = '<option value="">Todos los proveedores</option>' + suppliers.map((s) => `<option value="${esc(s.id)}" ${s.id === cur ? 'selected' : ''}>${esc(s.name)} (${s.total})</option>`).join('');
+  renderSupplier(); renderList();
+}
+
+function renderSupplier() {
+  const card = $('#sup-card');
+  const s = suppliers.find((x) => x.id === $('#f-sup').value);
+  if (!s) { card.hidden = true; return; }
+  card.hidden = false;
+  card.innerHTML = `<input id="sup-name" value="${esc(s.name)}" aria-label="Nombre del proveedor">
+    <span class="stat">${esc(s.platform || '')} · <code>${esc(s.id)}</code></span>
+    ${s.url ? `<a class="stat" href="${esc(s.url)}" target="_blank" rel="noopener">Abrir su tienda ↗</a>` : ''}
+    <span class="stat"><b>${s.total}</b> artículos · ${s.draft || 0} borrador · ${(s.approved || 0) + (s.published || 0)} en tienda · ${s.archived || 0} archivados</span>
+    <span class="stat">Última importación: ${s.last_import ? new Date(s.last_import).toLocaleString('es-ES') : '—'}</span>
+    <textarea id="sup-notes" placeholder="Notas: contacto, plazos, calidad de las muestras, condiciones…">${esc(s.notes || '')}</textarea>
+    <button id="sup-save">Guardar proveedor</button>`;
+  $('#sup-save').onclick = async () => {
+    await api(`/api/suppliers/${encodeURIComponent(s.id)}`, { method: 'PUT', body: { name: $('#sup-name').value, notes: $('#sup-notes').value } });
+    await loadList();
+  };
+}
+
+function visible() {
+  const st = $('#f-status').value; const cat = $('#f-cat').value; const sup = $('#f-sup').value; const onlyErr = $('#f-errors').checked; const q = $('#f-q').value.toLowerCase();
+  return items.filter((p) => (!st || p.status === st) && (!cat || p.category === cat) && (!sup || p.supplier === sup) && (!onlyErr || p.errors.length) && (!q || `${p.title} ${p.id}`.toLowerCase().includes(q)));
+}
 
 function renderList() {
-  const st = $('#f-status').value; const cat = $('#f-cat').value; const onlyErr = $('#f-errors').checked; const q = $('#f-q').value.toLowerCase();
-  const shown = items.filter((p) => (!st || p.status === st) && (!cat || p.category === cat) && (!onlyErr || p.errors.length) && (!q || `${p.title} ${p.id}`.toLowerCase().includes(q)));
+  const shown = visible();
   $('#list').innerHTML = shown.map((p) => `<div class="item ${current?.id === p.id ? 'active' : ''}" data-id="${p.id}">
     <input type="checkbox" ${selected.has(p.id) ? 'checked' : ''} data-sel="${p.id}">
     ${p.cover ? `<img src="${esc(p.cover)}" loading="lazy" alt="">` : '<div class="ph"></div>'}
     <div class="meta"><b>${esc(p.title)}</b>
       <span class="badge ${p.status}">${p.status}</span>${p.errors.length ? `<span class="badge err">${p.errors.length} err</span>` : ''}${p.warnings.length ? `<span class="badge warn">${p.warnings.length} aviso</span>` : ''}
-      <div>${p.price_eur ?? '—'} € · ${p.images} fotos${p.margin ? ` · ${p.margin.gross_margin_pct}%` : ''}</div></div></div>`).join('') || '<p>No hay productos.</p>';
+      <div>${p.price_eur ?? '—'} € · ${p.images} fotos${p.margin ? ` · ${p.margin.gross_margin_pct}%` : ''}</div>
+      <span class="sup">${esc(suppliers.find((s) => s.id === p.supplier)?.name || p.supplier)}${p.supplier_category ? ` · ${esc(p.supplier_category)}` : ''}</span></div></div>`).join('') || '<p>No hay productos.</p>';
   $('#sel-count').textContent = `${selected.size} seleccionados`;
 }
 

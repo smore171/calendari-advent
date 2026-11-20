@@ -27,7 +27,7 @@ npm install
 npm run demo        # crea 16 productos de prueba con fotos sintéticas y genera la web
 npm run preview     # tienda en http://localhost:8788
 npm run admin       # panel en http://localhost:4321 (en otra terminal)
-npm test            # 17 tests
+npm test            # 18 tests
 ```
 
 La demo incluye a propósito una camisa **sin composición**: el sistema no deja publicarla hasta que la completes en el panel.
@@ -62,6 +62,13 @@ Cada álbum se convierte en un producto en borrador: título, fotos (en tamaño 
 - `--html archivo.html` permite importar un álbum guardado desde el navegador si Yupoo bloquea las peticiones.
 - **Probado con páginas de ejemplo, no contra Yupoo en vivo**: si cambian su HTML, los ajustes están en `src/import/yupoo.js`.
 - Muchos catálogos de Yupoo son réplicas de marcas: importa solo los de tu proveedor de marca blanca.
+
+### Proveedores
+
+Cada importación registra su proveedor en `data/suppliers.json` (Yupoo: la tienda; Sourcebase/Weidian: el ID de tienda) y cada producto guarda `source.supplier_id`.
+
+- **Panel**: desplegable «Todos los proveedores» → al elegir uno ves su ficha (nombre editable, enlace a su tienda, artículos por estado, última importación y notas: contacto, plazos, calidad de muestras) y solo sus artículos. «Seleccionar los visibles» + «Aprobar» aprueba de golpe lo filtrado.
+- **Terminal**: `npm run proveedores` lista todos con sus cifras; `--proveedor <id>` limita `approve`, `images` o `validate` a uno: `node src/cli.js approve --proveedor yupoo-tienda`.
 
 ### Exportar a Shopify (CSV masivo)
 

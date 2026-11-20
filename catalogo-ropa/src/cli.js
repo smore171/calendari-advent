@@ -6,6 +6,7 @@
  *   node src/cli.js sourcebase <catalog.json> [--store ID]... [--q texto] [--limit N]   Sourcebase → data/raw/*.json
  *   node src/cli.js images [--all|--pending|<id>] [--no-ai]    clasifica, ordena y genera WebP
  *   node src/cli.js approve [--all|<id>]             pasa a approved si no hay errores
+ *   node src/cli.js proveedores                      lista de proveedores con sus artículos
  *   node src/cli.js validate                         informe de errores/avisos
  *   node src/cli.js build                            genera la web en dist/
  *   node src/cli.js shopify [--images r2|source] [--include-drafts] [--out f.csv]   CSV para importar en Shopify
@@ -17,6 +18,7 @@ import { loadConfig, PATHS } from './lib/config.js';
 import { readJson, writeJson, listJson, nowIso, ensureDir } from './lib/util.js';
 import { validateProduct } from './lib/schema.js';
 import { rawToProduct } from './import/from-raw.js';
+import { loadSuppliers, saveSuppliers, touchSupplier, supplierStats } from './lib/suppliers.js';
 
 const [cmd, ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -24,8 +26,11 @@ const productFile = (id) => path.join(PATHS.products, `${id}.json`);
 const allProducts = () => listJson(PATHS.products).map(readJson);
 
 function selectProducts(args) {
-  const ids = args.filter((a) => !a.startsWith('--'));
-  const all = allProducts();
+  const i = args.indexOf('--proveedor');
+  const supplier = i !== -1 ? args[i + 1] : null;
+  const ids = args.filter((a, k) => !a.startsWith('--') && !(i !== -1 && k === i + 1));
+  const all = allProducts().filter((p) => !supplier || p.source?.supplier_id === supplier);
+  if (supplier) return ids.length ? all.filter((p) => ids.includes(p.id)) : all;
   if (args.includes('--all') || args.includes('--pending') || ids.length === 0) return all;
   return all.filter((p) => ids.includes(p.id));
 }
@@ -35,6 +40,7 @@ function importFiles(files) {
   const existingIds = new Set(existing.map((p) => p.id));
   const knownUrls = new Set(existing.map((p) => p.source?.url).filter(Boolean));
   let created = 0;
+  const reg = loadSuppliers();
   for (const file of files) {
     const data = readJson(file);
     for (const raw of Array.isArray(data) ? data : [data]) {
@@ -42,10 +48,12 @@ function importFiles(files) {
       const p = rawToProduct(raw, { config, rawDir: path.dirname(file), existingIds });
       existingIds.add(p.id); knownUrls.add(p.source.url);
       writeJson(productFile(p.id), p);
+      touchSupplier(reg, p);
       console.log(`+ ${p.id} (${p.images.length} fotos, ${p.variants.length} variantes, ${p.price_eur ?? '—'} €)`);
       created++;
     }
   }
+  saveSuppliers(reg);
   console.log(`Importados: ${created}`);
   return created;
 }
@@ -94,6 +102,12 @@ async function main() {
       const out = path.join(PATHS.raw, `sourcebase-${stamp}.json`);
       writeJson(out, raws);
       if (!args.includes('--no-import')) importFiles([out]);
+      break;
+    }
+    case 'proveedores': {
+      const rows = supplierStats(allProducts(), loadSuppliers());
+      if (!rows.length) { console.log('Aún no hay proveedores: importa algo primero.'); break; }
+      for (const r of rows) console.log(`${r.id.padEnd(32)} ${String(r.total).padStart(5)} artículos · ${r.draft || 0} borrador · ${(r.approved || 0) + (r.published || 0)} en tienda · ${r.name}${r.url ? ` · ${r.url}` : ''}`);
       break;
     }
     case 'images': {

@@ -80,8 +80,11 @@ export function parseAlbum(html, url) {
     seen.add(k); images.push(u);
   }
 
+  // Nombre visible de la tienda y categoría del álbum (si la página las muestra).
+  const storeName = stripTags(html.match(/class="[^"]*showheader__nickname[^"]*"[^>]*>([\s\S]*?)<\//)?.[1] || '');
+  const category = stripTags(html.match(/href="[^"]*\/categories\/\d+[^"]*"[^>]*>([\s\S]*?)<\/a>/)?.[1] || '');
   const text = `${title}\n${description}`;
-  return { url, title, description, images, ...extractHints(text) };
+  return { url, title, description, images, storeName, category, ...extractHints(text) };
 }
 
 /** Pistas en texto libre (chino/inglés) que suelen poner los proveedores. */
@@ -125,7 +128,10 @@ export function albumToRaw(album, store) {
   return {
     url: album.url.replace(/\?.*$/, ''),
     platform: 'yupoo',
-    shop: store,
+    shop: album.storeName || store,
+    supplier_id: `yupoo-${store}`.toLowerCase(),
+    supplier_url: `https://${store}.x.yupoo.com/albums`,
+    ...(album.category ? { supplier_category: album.category } : {}),
     title: album.title,
     price_cny: album.price_cny,
     images: album.images,

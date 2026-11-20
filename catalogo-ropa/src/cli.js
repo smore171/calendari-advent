@@ -3,6 +3,7 @@
  * Uso:
  *   node src/cli.js import <archivo.json|carpeta>   crudo (Sourcebase) → data/products/*.json (draft)
  *   node src/cli.js yupoo <url> [--limit N] [--pages N] [--html f]  Yupoo → data/raw/*.json
+ *   node src/cli.js sourcebase <catalog.json> [--store ID]... [--q texto] [--limit N]   Sourcebase → data/raw/*.json
  *   node src/cli.js images [--all|<id>] [--no-ai]    clasifica, ordena y genera WebP
  *   node src/cli.js approve [--all|<id>]             pasa a approved si no hay errores
  *   node src/cli.js validate                         informe de errores/avisos
@@ -70,6 +71,23 @@ async function main() {
       const out = path.join(PATHS.raw, `yupoo-${store}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '')}.json`);
       writeJson(out, raws);
       console.log(`Guardado ${raws.length} álbum(es) en ${path.relative(PATHS.root, out)}`);
+      if (!args.includes('--no-import')) importFiles([out]);
+      break;
+    }
+    case 'sourcebase': {
+      const { importSourcebase } = await import('./import/from-sourcebase.js');
+      const file = args.find((a) => a.endsWith('.json'));
+      if (!file) throw new Error('Uso: npm run sourcebase -- <ruta a Sourcebase/server/data/catalog.json> --store <id> [--limit 100]');
+      const multi = (name) => args.flatMap((a, i) => (a === `--${name}` && args[i + 1] ? [args[i + 1]] : []));
+      const opt = (name) => multi(name)[0];
+      const { raws, rejected } = await importSourcebase(path.resolve(file), {
+        stores: multi('store'), ids: (opt('ids') || '').split(',').filter(Boolean), q: opt('q') || '', limit: Number(opt('limit') || 200),
+      });
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '');
+      writeJson(path.join(PATHS.raw, `sourcebase-descartados-${stamp}.json`), rejected);
+      if (!raws.length) { console.log('Nada que importar.'); break; }
+      const out = path.join(PATHS.raw, `sourcebase-${stamp}.json`);
+      writeJson(out, raws);
       if (!args.includes('--no-import')) importFiles([out]);
       break;
     }

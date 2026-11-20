@@ -19,7 +19,8 @@
     "test": "node --test tests/*.test.js",
     "build:prod": "MEDIA_FROM_R2=1 node src/cli.js build",
     "yupoo": "node src/cli.js yupoo",
-    "shopify": "node src/cli.js shopify"
+    "shopify": "node src/cli.js shopify",
+    "sourcebase": "node src/cli.js sourcebase"
   },
   "dependencies": {
     "sharp": "^0.35.0"

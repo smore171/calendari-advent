@@ -82,7 +82,7 @@ export function rawToProduct(raw, { config, rawDir = '.', existingIds = new Set(
     p.variants.push({
       sku: makeSku(p.id, color, size),
       color, size,
-      stock: 'on_demand',
+      stock: Number(pick(s, 'stock')) === 0 && pick(s, 'stock') !== '' && pick(s, 'stock') != null ? 'out_of_stock' : 'on_demand',
       price_eur: Number.isFinite(vCost) && vCost !== cost ? suggestPrice(vCost, config.pricing) : null,
     });
   }

@@ -212,3 +212,22 @@ test('Shopify CSV: cabeceras, variantes, imágenes extra y escapado', async () =
   assert.equal(csv.trim().split('\r\n').length, 4);
   assert.equal(COLUMNS.length, new Set(COLUMNS).size);
 });
+
+test('Sourcebase: filtro de marcas, variantes y conversión', async () => {
+  const { brandReason, splitVariantTitle, sourcebaseToRaw } = await import('../src/import/from-sourcebase.js');
+  assert.match(brandReason('凯乐石冲锋衣 三标齐全', null), /réplica|marca/);
+  assert.match(brandReason('Nike Tech Fleece hoodie', null), /nike/i);
+  assert.match(brandReason('卫衣 纯棉', () => ({ brand: 'Stussy' })), /Stussy/);
+  assert.equal(brandReason('重磅纯棉卫衣 无logo 宽松', null), null);
+  const opts = [{ name: '颜色', values: ['黑色', '灰色'] }, { name: '尺码', values: ['M', 'L', 'XL'] }];
+  assert.deepEqual(splitVariantTitle('黑色;XL', opts), { color: '黑色', size: 'XL' });
+  assert.deepEqual(splitVariantTitle('灰色 均码', []), { color: '灰色', size: 'Única' });
+  const raw = sourcebaseToRaw({ id: 'wd_1_2', name: '纯棉卫衣', source_url: 'https://weidian.com/item.html?itemID=2', marketplace: 'Weidian',
+    store_name: 'X', price_original: 89, image_source_urls: ['https://si.geilicdn.com/a.jpg'], options: opts,
+    variants: [{ title: '黑色;M', price: 89, stock: 3 }, { title: '灰色;L', price: 95, stock: 0 }] });
+  const p = rawToProduct(raw, { config: { pricing } });
+  assert.equal(p.source.platform, 'weidian');
+  assert.deepEqual(p.colors, ['Negro', 'Gris']);
+  assert.equal(p.variants.find((v) => v.size === 'L').stock, 'out_of_stock');
+  assert.ok(p.variants.find((v) => v.size === 'L').price_eur > p.price_eur);
+});

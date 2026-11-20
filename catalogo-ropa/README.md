@@ -27,7 +27,7 @@ npm install
 npm run demo        # crea 16 productos de prueba con fotos sintéticas y genera la web
 npm run preview     # tienda en http://localhost:8788
 npm run admin       # panel en http://localhost:4321 (en otra terminal)
-npm test            # 16 tests
+npm test            # 17 tests
 ```
 
 La demo incluye a propósito una camisa **sin composición**: el sistema no deja publicarla hasta que la completes en el panel.
@@ -83,7 +83,18 @@ Después, en Shopify: **Productos → Importar → sube el CSV**.
 - Archivos de más de 14 MB se parten en varios CSV automáticamente.
 - Pesos por categoría y coste por artículo son estimaciones: revísalos.
 
-### Conectar Sourcebase
+### Importar desde Sourcebase
+
+```bash
+npm run sourcebase -- "C:\Users\roger\Downloads\Sourcebase\server\data\catalog.json" --store 1407325822 --limit 100
+```
+
+Lee el `catalog.json` de Sourcebase (filtra por `--store`, `--q` o `--ids`) y crea borradores con título, precio, fotos y variantes (color/talla a partir de los SKU).
+
+- **Filtro de marcas siempre activo**: descarta todo producto en el que el diccionario de Sourcebase (`tagger.js`) detecte una marca o modelo, o con expresiones de réplica (三标齐全, 1:1, 复刻, 原版…). Los descartados quedan listados en `data/raw/sourcebase-descartados-*.json`. Revisa igualmente cada producto: el filtro reduce el riesgo, no lo elimina.
+- Sourcebase guarda solo 1–3 fotos por artículo del listado de la tienda y muchas variantes quedan «pendientes»: completa tallas y colores en el panel, o usa Yupoo si el proveedor tiene álbum con más fotos.
+
+### Conectar Sourcebase (formato crudo genérico)
 
 El importador acepta varios nombres de campo habituales (`title`/`name`, `images`/`imgs`, `skus`/`variants`…). Si Sourcebase usa otros, solo hay que tocar `pick()` en [`src/import/from-raw.js`](src/import/from-raw.js). Ejemplo mínimo:
 

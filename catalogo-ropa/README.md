@@ -48,14 +48,16 @@ La demo incluye a propósito una camisa **sin composición**: el sistema no deja
 
 ```bash
 npm run yupoo -- https://TIENDA.x.yupoo.com/albums/123456        # un álbum
-npm run yupoo -- https://TIENDA.x.yupoo.com/albums --limit 50     # la tienda entera (paginada)
+npm run yupoo -- https://TIENDA.x.yupoo.com/albums                # la tienda entera: TODOS los álbumes
 npm run yupoo -- https://TIENDA.x.yupoo.com/categories/7890       # una categoría
-npm run images -- --all                                           # luego, las fotos
+npm run images -- --pending                                       # luego, las fotos (solo las nuevas)
 ```
 
 Cada álbum se convierte en un producto en borrador: título, fotos (en tamaño grande), y del texto del álbum saca precio (¥/RMB/元), tallas (`S-XL`, `M L XL`, `尺码…`), colores y composición. Lo que no venga en el álbum (Yupoo no tiene variantes estructuradas) se completa en el panel: colores, tallas y disponibilidad son editables y regeneran las variantes.
 
-- Va despacio a propósito (≈1 s entre peticiones) para no saturar Yupoo.
+- Cada álbum de Yupoo es un artículo. Sin límite: carga todos al catálogo y tú eliges en el panel cuáles aprobar. `--limit N` solo para pruebas.
+- Va despacio a propósito (≈1–1,5 s por álbum, unos 10 min por cada 500) para que Yupoo no bloquee.
+- Guarda cada 25 artículos: si se corta, vuelve a lanzarlo y salta los que ya están en el catálogo.
 - Álbumes privados o con contraseña no se pueden leer.
 - `--html archivo.html` permite importar un álbum guardado desde el navegador si Yupoo bloquea las peticiones.
 - **Probado con páginas de ejemplo, no contra Yupoo en vivo**: si cambian su HTML, los ajustes están en `src/import/yupoo.js`.

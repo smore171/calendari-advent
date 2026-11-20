@@ -4,7 +4,9 @@
  *   npm run yupoo -- https://TIENDA.x.yupoo.com/albums/123456      un álbum
  *   npm run yupoo -- https://TIENDA.x.yupoo.com/albums               toda la tienda (paginada)
  *   npm run yupoo -- https://TIENDA.x.yupoo.com/categories/7890      una categoría
- *   opciones: --limit 50 (máx. álbumes)  --pages 5 (máx. páginas de listado)  --html archivo.html (offline)
+ *   Sin límite por defecto: importa TODOS los álbumes (cada álbum = un artículo).
+ *   opciones: --limit N (solo para probar)  --html archivo.html (offline)
+ *   Si se corta, vuelve a lanzarlo: salta los álbumes que ya están en el catálogo.
  *
  * Genera data/raw/yupoo-<tienda>-<fecha>.json en el formato crudo común;
  * después: npm run import && npm run images -- --all
@@ -142,11 +144,16 @@ async function get(url, referer) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Descarga y convierte. Devuelve la lista de productos crudos. */
-export async function importYupoo(input, { limit = 200, pages = 20, html = null, delayMs = 900, log = console.log } = {}) {
+export async function importYupoo(input, { limit = Infinity, pages = Infinity, html = null, delayMs = 900, skipUrls = new Set(), onBatch = null, batchSize = 25, log = console.log } = {}) {
   const info = parseYupooUrl(input);
   if (html) {
     const page = readFileSync(path.resolve(html), 'utf8');
-    if (info.kind === 'album') return [albumToRaw(parseAlbum(page, input), info.store)];
+    if (info.kind === 'album') {
+      const raw = albumToRaw(parseAlbum(page, input), info.store);
+      if (skipUrls.has(raw.url)) { log('Ese álbum ya está en el catálogo.'); return []; }
+      if (onBatch) await onBatch([raw]);
+      return [raw];
+    }
     const { albums } = parseAlbumList(page, info.origin);
     log(`Listado offline: ${albums.length} álbumes (descárgalos uno a uno con --html o sin --html online)`);
     return [];
@@ -158,7 +165,7 @@ export async function importYupoo(input, { limit = 200, pages = 20, html = null,
   } else {
     const base = info.category ? `${info.origin}/categories/${info.category}` : `${info.origin}/albums`;
     let maxPage = 1;
-    for (let p = 1; p <= Math.min(maxPage, pages) && albumUrls.length < limit; p++) {
+    for (let p = 1; p <= Math.min(maxPage, pages); p++) {
       const page = await get(`${base}?page=${p}`, info.origin + '/');
       const parsed = parseAlbumList(page, info.origin);
       maxPage = Math.max(maxPage, parsed.maxPage);
@@ -170,15 +177,22 @@ export async function importYupoo(input, { limit = 200, pages = 20, html = null,
     }
   }
 
-  const out = [];
-  for (const [i, url] of albumUrls.slice(0, limit).entries()) {
+  const todo = albumUrls.filter((u) => !skipUrls.has(u.replace(/\?.*$/, ''))).slice(0, limit);
+  const skipped = albumUrls.length - todo.length;
+  log(`${albumUrls.length} álbumes encontrados${skipped ? ` · ${skipped} ya estaban en el catálogo` : ''} · a importar: ${todo.length}${todo.length > 60 ? ` (≈${Math.ceil(todo.length * (delayMs + 600) / 60000)} min)` : ''}`);
+  const out = []; let batch = [];
+  for (const [i, url] of todo.entries()) {
     try {
       const album = parseAlbum(await get(url, info.origin + '/'), url);
       if (!album.images.length) { log(`  ✗ ${url}: sin fotos (¿álbum privado o con contraseña?)`); continue; }
-      out.push(albumToRaw(album, info.store));
-      log(`  ✓ [${i + 1}/${Math.min(limit, albumUrls.length)}] ${album.title.slice(0, 50)} · ${album.images.length} fotos · ${album.price_cny ?? '¿?'} CNY`);
+      const raw = albumToRaw(album, info.store);
+      out.push(raw); batch.push(raw);
+      log(`  ✓ [${i + 1}/${todo.length}] ${album.title.slice(0, 50)} · ${album.images.length} fotos · ${album.price_cny ?? '¿?'} CNY`);
     } catch (e) { log(`  ✗ ${url}: ${e.message}`); }
+    // Guarda por tandas: si se corta, lo importado hasta ahí ya está en el catálogo.
+    if (onBatch && batch.length >= batchSize) { await onBatch(batch); batch = []; }
     await sleep(delayMs);
   }
+  if (onBatch && batch.length) await onBatch(batch);
   return out;
 }

@@ -2,9 +2,9 @@
 /**
  * Uso:
  *   node src/cli.js import <archivo.json|carpeta>   crudo (Sourcebase) → data/products/*.json (draft)
- *   node src/cli.js yupoo <url> [--limit N] [--pages N] [--html f]  Yupoo → data/raw/*.json
+ *   node src/cli.js yupoo <url> [--limit N] [--html f]   Yupoo → catálogo (todos los álbumes; salta los ya importados)
  *   node src/cli.js sourcebase <catalog.json> [--store ID]... [--q texto] [--limit N]   Sourcebase → data/raw/*.json
- *   node src/cli.js images [--all|<id>] [--no-ai]    clasifica, ordena y genera WebP
+ *   node src/cli.js images [--all|--pending|<id>] [--no-ai]    clasifica, ordena y genera WebP
  *   node src/cli.js approve [--all|<id>]             pasa a approved si no hay errores
  *   node src/cli.js validate                         informe de errores/avisos
  *   node src/cli.js build                            genera la web en dist/
@@ -26,7 +26,7 @@ const allProducts = () => listJson(PATHS.products).map(readJson);
 function selectProducts(args) {
   const ids = args.filter((a) => !a.startsWith('--'));
   const all = allProducts();
-  if (args.includes('--all') || ids.length === 0) return all;
+  if (args.includes('--all') || args.includes('--pending') || ids.length === 0) return all;
   return all.filter((p) => ids.includes(p.id));
 }
 
@@ -63,15 +63,20 @@ async function main() {
     case 'yupoo': {
       const { importYupoo, parseYupooUrl } = await import('./import/yupoo.js');
       const url = args.find((a) => /^https?:/.test(a));
-      if (!url) throw new Error('Uso: npm run yupoo -- https://TIENDA.x.yupoo.com/albums[/ID] [--limit 50]');
+      if (!url) throw new Error('Uso: npm run yupoo -- https://TIENDA.x.yupoo.com/albums[/ID]');
       const opt = (name) => { const i = args.indexOf(`--${name}`); return i !== -1 ? args[i + 1] : undefined; };
-      const raws = await importYupoo(url, { limit: Number(opt('limit') || 200), pages: Number(opt('pages') || 20), html: opt('html') });
-      if (!raws.length) { console.log('No se obtuvo ningún álbum.'); break; }
       const { store } = parseYupooUrl(url);
-      const out = path.join(PATHS.raw, `yupoo-${store}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '')}.json`);
-      writeJson(out, raws);
-      console.log(`Guardado ${raws.length} álbum(es) en ${path.relative(PATHS.root, out)}`);
-      if (!args.includes('--no-import')) importFiles([out]);
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '');
+      const skipUrls = new Set(allProducts().map((p) => p.source?.url).filter(Boolean));
+      let part = 0;
+      const onBatch = args.includes('--no-import') ? null : (batch) => {
+        const out = path.join(PATHS.raw, `yupoo-${store}-${stamp}-${String(++part).padStart(3, '0')}.json`);
+        writeJson(out, batch);
+        importFiles([out]);
+      };
+      const raws = await importYupoo(url, { limit: Number(opt('limit')) || Infinity, html: opt('html'), skipUrls, onBatch });
+      if (!onBatch && raws.length) writeJson(path.join(PATHS.raw, `yupoo-${store}-${stamp}.json`), raws);
+      console.log(raws.length ? `Total: ${raws.length} artículo(s) de Yupoo.` : 'No se importó ningún álbum nuevo.');
       break;
     }
     case 'sourcebase': {
@@ -93,7 +98,12 @@ async function main() {
     }
     case 'images': {
       const { processProductImages } = await import('./images/process.js');
-      for (const p of selectProducts(args)) {
+      let list = selectProducts(args);
+      // --pending: solo productos con fotos sin procesar (para no repetir todo el catálogo).
+      if (args.includes('--pending')) list = list.filter((p) => p.images.some((i) => !i.hash && i.type !== 'discard'));
+      console.log(`Procesando fotos de ${list.length} producto(s)…`);
+      for (const [n, p] of list.entries()) {
+        process.stdout.write(`[${n + 1}/${list.length}] `);
         await processProductImages(p, config, { useAi: !args.includes('--no-ai') });
         writeJson(productFile(p.id), p);
       }
